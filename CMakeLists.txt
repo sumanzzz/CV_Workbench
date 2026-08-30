@@ -5,6 +5,10 @@ project(CV_Workbench
     LANGUAGES CXX
 )
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -18,20 +22,4 @@ find_package(OpenCV REQUIRED)
 message(STATUS "OpenCV version: ${OpenCV_VERSION}")
 message(STATUS "OpenCV include directories: ${OpenCV_INCLUDE_DIRS}")
 
-
-add_executable(CV_Workbench
-    src/main.cpp
-)
-
-target_include_directories(CV_Workbench
-    PRIVATE ${OpenCV_INCLUDE_DIRS}
-)
-
-target_link_libraries(CV_Workbench
-    PRIVATE ${OpenCV_LIBS}
-)
-target_link_libraries(CV_Workbench
-    PRIVATE
-    ${OpenCV_LIBS}
-    Qt6::Widgets
-)
+add_subdirectory(src/app)
