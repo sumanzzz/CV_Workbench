@@ -22,4 +22,5 @@ find_package(OpenCV REQUIRED)
 message(STATUS "OpenCV version: ${OpenCV_VERSION}")
 message(STATUS "OpenCV include directories: ${OpenCV_INCLUDE_DIRS}")
 
+add_subdirectory(src/core)
 add_subdirectory(src/app)

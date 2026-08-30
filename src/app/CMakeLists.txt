@@ -1,14 +1,11 @@
 add_executable(CV_Workbench
-    main.cpp   
-)
-
-target_include_directories(CV_Workbench
-    PRIVATE
-    ${OpenCV_INCLUDE_DIRS}
+    main.cpp
+    Application.h
+    Application.cpp
 )
 
 target_link_libraries(CV_Workbench
     PRIVATE
-    ${OpenCV_LIBS}
     Qt6::Widgets
+    CV_Core
 )
