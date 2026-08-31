@@ -2,6 +2,7 @@
 
 #include <QApplication>
 
+
 class Application
 {
 private:
