@@ -16,7 +16,5 @@ int Application::run()
 	window.show();
 
 	return m_app.exec();
-
-	
 }
 
