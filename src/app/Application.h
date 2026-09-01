@@ -12,6 +12,4 @@ public:
 	Application(int& argc, char* argv[]);
 
 	int run();
-
-
 };

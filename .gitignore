@@ -2,3 +2,5 @@ out/
 .vs/
 CMakePresets.json
 CMakeUserPresets.json
+.qtcreator/
+build/

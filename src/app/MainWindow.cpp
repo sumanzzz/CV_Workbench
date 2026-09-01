@@ -5,12 +5,12 @@
 #include <QWidget>
 
 #include <QGridLayout>
+#include <QVBoxLayout>
 
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QMenuBar>
-#include <QLabel>
 #include <QImage>
 #include <QPixmap>
 
@@ -34,13 +34,27 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 	QMenu* fileMenu = menuBar()->addMenu(AppConfig::MENU_FILE);
 	QAction* fileAction = fileMenu->addAction(AppConfig::FILE_OPEN);
 
+	QMenu* toolsMenu = menuBar()->addMenu(AppConfig::MENU_TOOL);
+	QAction* toolAction = toolsMenu->addAction(AppConfig::TOOL_BLUR);
+
 	// WORKSPACE
 	imageDisplay = new QLabel(centralWindow);
 
 	imageDisplay->setAlignment(Qt::AlignCenter);
-	imageDisplay->setText("No Image Loaded");
+	imageDisplay->setText(ALERT::NO_IMAGE);
 
 	layout->addWidget(imageDisplay);
+
+	// TOOLS PANEL
+	QWidget* toolsPanel = new QWidget(centralWindow);
+	layout->addWidget(toolsPanel, 0, 2, 3, 1);
+
+	QVBoxLayout* toolsLayout = new QVBoxLayout(toolsPanel);
+
+	QLabel* toolsTitle = new QLabel(AppConfig::TOOLS_PANEL_TITLE, toolsPanel);
+	toolsLayout->addWidget(toolsTitle);
+	toolsLayout->setAlignment(Qt::AlignTop);
+	toolsLayout->setAlignment(toolsTitle, Qt::AlignHCenter);
 
 
 	// SIGNALS AND SLOTS
