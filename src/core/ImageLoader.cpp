@@ -11,5 +11,6 @@ cv::Mat ImageLoader::load(const std::string& filePath)
 		exit(0);
 	}
 	cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
+
 	return image;
 }

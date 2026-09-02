@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "ImageLoader.h"
+
 #include <opencv2/core.hpp>
 
 #include <QWidget>
@@ -10,6 +11,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QSlider>
 #include <QMenuBar>
 #include <QImage>
 #include <QPixmap>
@@ -46,10 +48,10 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 	layout->addWidget(imageDisplay);
 
 	// TOOLS PANEL
-	QWidget* toolsPanel = new QWidget(centralWindow);
+	toolsPanel = new QWidget(centralWindow);
 	layout->addWidget(toolsPanel, 0, 2, 3, 1);
 
-	QVBoxLayout* toolsLayout = new QVBoxLayout(toolsPanel);
+	toolsLayout = new QVBoxLayout(toolsPanel);
 
 	QLabel* toolsTitle = new QLabel(AppConfig::TOOLS_PANEL_TITLE, toolsPanel);
 	toolsLayout->addWidget(toolsTitle);
@@ -65,6 +67,14 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 		&MainWindow::openFile
 	);
 
+	QWidget::connect(
+		toolAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::showBlurTools
+	);
+	
+
 }
 
 void MainWindow::openFile()
@@ -78,20 +88,55 @@ void MainWindow::openFile()
 	if (!filename.isEmpty())
 	{
 		ImageLoader loader;
-		cv::Mat image = loader.load(filename.toStdString());
+		cv::Mat loadedImage = loader.load(filename.toStdString());
 		
-		if (image.empty())
+		if (loadedImage.empty())
 		{
 			return;
 		}
+		image = new Image(loadedImage);
 
 		QImage qImage(
-			image.data,
-			image.cols,
-			image.rows,
-			static_cast<int>(image.step),
+			loadedImage.data,
+			loadedImage.cols,
+			loadedImage.rows,
+			static_cast<int>(loadedImage.step),
 			QImage::Format_RGB888
 		);
 		imageDisplay->setPixmap(QPixmap::fromImage(qImage.copy()));
 	}
+}
+
+void MainWindow::showBlurTools()
+{
+	QLabel* blurTitle = new QLabel(AppConfig::GAUSSIAN_BLUR, toolsPanel);
+	toolsLayout->addWidget(blurTitle);
+
+	// SLIDER FOR GAUSSIAN BLUR
+	QSlider* gaussianSlider = new QSlider(Qt::Horizontal, toolsPanel);
+	gaussianSlider->setMinimum(0);
+	gaussianSlider->setMaximum(10);
+	toolsLayout->addWidget(gaussianSlider);
+
+	QObject::connect(
+		gaussianSlider,
+		&QSlider::valueChanged,
+		this,
+		[this](int value)
+		{
+			int kernelSize = (2 * value + 1);
+			cv::Mat blurred = image->gaussianBlur(kernelSize);
+			qDebug() << "Gaussian Blur :" << kernelSize;
+
+			QImage qImage(
+				blurred.data,
+				blurred.cols,
+				blurred.rows,
+				static_cast<int>(blurred.step),
+				QImage::Format_RGB888
+			);
+			imageDisplay->setPixmap(QPixmap::fromImage(qImage.copy()));
+		}
+	);
+
 }

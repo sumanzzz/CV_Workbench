@@ -4,7 +4,7 @@ class Image
 {
 public:
 	Image(const cv::Mat& image);
-	void blurring();
+	cv::Mat gaussianBlur(int KernelSize);
 
 private:
 	cv::Mat m_image;

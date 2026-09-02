@@ -14,6 +14,9 @@ namespace AppConfig
 
 	// TOOLS PANEL
 	constexpr auto TOOLS_PANEL_TITLE = "Tools";
+
+	//BLUR TOOLS
+	constexpr auto GAUSSIAN_BLUR = "Gaussian Blur";
 }
 namespace ALERT
 {
