@@ -148,9 +148,9 @@ void MainWindow::showBlurTools()
 			cv::Mat blurred;
 			switch (blurType->currentIndex())
 			{
-			case 0: blurred = m_image->gaussianBlur(kernelSize); break;
+			case 0:   blurred = m_image->gaussianBlur(kernelSize); break;
 			case 1:   blurred = m_image->medianBlur(kernelSize); break;
-			case 2:      blurred = m_image->boxBlur(kernelSize); break;
+			case 2:   blurred = m_image->boxBlur(kernelSize); break;
 			}
 			qDebug() << blurType<< " Blur :" << kernelSize;
 
