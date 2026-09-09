@@ -19,5 +19,5 @@ public:
 	QVBoxLayout* toolsLayout;
 
 private:
-	Image* image;
+	Image* m_image;
 };
