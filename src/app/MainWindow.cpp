@@ -1,6 +1,6 @@
 #include "MainWindow.h"
 #include "ImageLoader.h"
-
+	
 #include <opencv2/core.hpp>
 
 #include <QWidget>
@@ -106,18 +106,7 @@ void MainWindow::openFile()
 			return;
 		}
 		m_image = new Image(loadedImage);
-
-
-		
-		QImage qImage(
-			loadedImage.data,
-			loadedImage.cols,
-			loadedImage.rows,
-			static_cast<int>(loadedImage.step),
-			QImage::Format_RGB888
-		);
-		imageDisplay->setPixmap(QPixmap::fromImage(qImage.copy()));
-		
+		displayImage(loadedImage);
 	}
 }
 
@@ -125,9 +114,26 @@ void MainWindow::openFile()
 void MainWindow::displayImage(const cv::Mat& image)
 {
 	
-	QImage qImage(image.data, image.cols, image.rows, static_cast<int>(image.step), QImage::Format_RGB888);
+	QImage qImage(
+		image.data,
+		image.cols,
+		image.rows,
+		static_cast<int>(image.step),
+		QImage::Format_RGB888
+	);
 	QPixmap pixmap = QPixmap::fromImage(qImage);
-	imageDisplay->setPixmap(pixmap.scaled(imageDisplay->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+	const QRect contentRect = imageDisplay->contentsRect();
+	const QPixmap scaledPixmap = pixmap.scaled(
+		contentRect.size(),
+		Qt::KeepAspectRatio,
+		Qt::SmoothTransformation
+	);
+	const QPoint topLeft(
+		contentRect.x() + (contentRect.width() - scaledPixmap.width()) / 2,
+		contentRect.y() + (contentRect.height() - scaledPixmap.height()) / 2
+	);
+	m_displayRect = QRect(topLeft, scaledPixmap.size());
+	imageDisplay->setPixmap(scaledPixmap);
 }
 
 // KEY POINTS
@@ -204,4 +210,4 @@ void MainWindow::showBlurTools()
 		}
 	);
 
-}	
+}

@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <QMainWindow>
+#include <QRect>
 #include <ImageOperations.h>
 
 class QLabel;
@@ -23,4 +24,5 @@ public:
 
 private:
 	Image* m_image;
+	QRect m_displayRect;
 };
