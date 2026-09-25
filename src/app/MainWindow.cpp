@@ -116,12 +116,23 @@ void MainWindow::openFile()
 	}
 }
 
+// DISPLAY IMAGE
 void MainWindow::displayImage(const cv::Mat& image)
 {
 	
 	QImage qImage(image.data, image.cols, image.rows, static_cast<int>(image.step), QImage::Format_RGB888);
 	QPixmap pixmap = QPixmap::fromImage(qImage);
 	imageDisplay->setPixmap(pixmap.scaled(imageDisplay->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+}
+
+// KEY POINTS
+void MainWindow::showKeyPoints()
+{
+	std::vector<cv::KeyPoint> keyPoints = m_image->detectKeypoints();
+
+	cv::Mat keyPointImage = m_image->drawKeyPoints(keyPoints);
+
+	displayImage(keyPointImage);
 }
 
 void MainWindow::showBlurTools()
@@ -175,11 +186,7 @@ void MainWindow::showBlurTools()
 		{
 			if (checked)
 			{
-				std::vector<cv::KeyPoint> keyPoints = m_image->detectKeypoints();
-
-				cv::Mat keyPointImage = m_image->drawKeyPoints(keyPoints);
-
-				displayImage(keyPointImage);
+				showKeyPoints();
 			}
 			else
 			{

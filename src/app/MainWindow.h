@@ -13,6 +13,7 @@ public:
 
 	void openFile();
 	void displayImage(const cv::Mat& image);
+	void showKeyPoints();
 	void showBlurTools();
 	void applyBlur();
 
