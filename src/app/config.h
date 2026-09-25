@@ -20,6 +20,9 @@ namespace AppConfig
 	constexpr auto GAUSSIAN_BLUR = "Gaussian";
 	constexpr auto MEDIAN_BLUR = "Median";
 	constexpr auto BOX_BLUR = "Box";
+
+	//KEYPOINT TOOL
+	constexpr auto TOOL_KEYPOINT = "Keypoint";
 }
 namespace ALERT
 {

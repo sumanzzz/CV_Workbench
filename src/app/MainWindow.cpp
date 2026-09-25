@@ -16,6 +16,7 @@
 #include <QMenuBar>
 #include <QImage>
 #include <QPixmap>
+#include <QCheckBox>
 
 #include <QSizePolicy>
 #include <QString>
@@ -101,6 +102,8 @@ void MainWindow::openFile()
 		}
 		m_image = new Image(loadedImage);
 
+
+		
 		QImage qImage(
 			loadedImage.data,
 			loadedImage.cols,
@@ -111,6 +114,14 @@ void MainWindow::openFile()
 		imageDisplay->setPixmap(QPixmap::fromImage(qImage.copy()));
 		
 	}
+}
+
+void MainWindow::displayImage(const cv::Mat& image)
+{
+	
+	QImage qImage(image.data, image.cols, image.rows, static_cast<int>(image.step), QImage::Format_RGB888);
+	QPixmap pixmap = QPixmap::fromImage(qImage);
+	imageDisplay->setPixmap(pixmap.scaled(imageDisplay->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
 
 void MainWindow::showBlurTools()
@@ -136,6 +147,9 @@ void MainWindow::showBlurTools()
 	QLabel* value = new QLabel("Kernel : 1", toolsPanel);
 	toolsLayout->addWidget(value);
 
+	QCheckBox* keyPointCheck = new QCheckBox("Show Keypoints", toolsPanel);
+	toolsLayout->addWidget(keyPointCheck);
+
 	QObject::connect(
 		slider,
 		&QSlider::valueChanged,
@@ -146,30 +160,34 @@ void MainWindow::showBlurTools()
 			value->setText("Kernel: " + QString::number(kernelSize));
 
 			cv::Mat blurred;
-			switch (blurType->currentIndex())
-			{
-			case 0:   blurred = m_image->gaussianBlur(kernelSize); break;
-			case 1:   blurred = m_image->medianBlur(kernelSize); break;
-			case 2:   blurred = m_image->boxBlur(kernelSize); break;
-			}
+			blurred = m_image->applyBlur(static_cast<BlurType>(blurType->currentIndex()) , kernelSize);
+
 			qDebug() << blurType<< " Blur :" << kernelSize;
 
-			QImage qImage(
-				blurred.data,
-				blurred.cols,
-				blurred.rows,
-				static_cast<int>(blurred.step),
-				QImage::Format_RGB888
-			);
-			QPixmap pixmap = QPixmap::fromImage(qImage);
+			displayImage(blurred);
+		}
+	);
+	QObject::connect(
+		keyPointCheck,
+		&QCheckBox::toggled,
+		this,
+		[this](bool checked)
+		{
+			if (checked)
+			{
+				std::vector<cv::KeyPoint> keyPoints = m_image->detectKeypoints();
 
-			imageDisplay->setPixmap(
-				pixmap.scaled(
-					imageDisplay->size(),
-					Qt::KeepAspectRatio,
-					Qt::SmoothTransformation
-				)
-			);
+				cv::Mat keyPointImage = m_image->drawKeyPoints(keyPoints);
+
+				displayImage(keyPointImage);
+			}
+			else
+			{
+				const cv::Mat& original = m_image->getImage();
+				displayImage(original);
+
+			}
+			
 		}
 	);
 

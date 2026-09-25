@@ -12,7 +12,9 @@ public:
 	explicit MainWindow(QWidget* parent = nullptr);
 
 	void openFile();
+	void displayImage(const cv::Mat& image);
 	void showBlurTools();
+	void applyBlur();
 
 	QLabel* imageDisplay;
 	QWidget* toolsPanel;
