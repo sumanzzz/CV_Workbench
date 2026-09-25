@@ -36,6 +36,40 @@ cv::Mat Image::applyBlur(BlurType type, int kernelSize)
 	}
 }
 
+cv::Mat Image::applyThreshold(ThresholdType type, double thresholdValue, double maxValue)
+{
+	if (m_image.empty())
+	{
+		return {};
+	}
+
+	int openCvThresholdType;
+	switch (type)
+	{
+	case ThresholdType::Binary:
+		openCvThresholdType = cv::THRESH_BINARY;
+		break;
+	case ThresholdType::BinaryInverse:
+		openCvThresholdType = cv::THRESH_BINARY_INV;
+		break;
+	case ThresholdType::Trunc:
+		openCvThresholdType = cv::THRESH_TRUNC;
+		break;
+	case ThresholdType::ToZero:
+		openCvThresholdType = cv::THRESH_TOZERO;
+		break;
+	case ThresholdType::ToZeroInverse:
+		openCvThresholdType = cv::THRESH_TOZERO_INV;
+		break;
+	default:
+		return {};
+	}
+
+	cv::Mat result;
+	cv::threshold(m_image, result, thresholdValue, maxValue, openCvThresholdType);
+	return result;
+}
+
 cv::Mat Image::applyBlurToRegion(
 	const cv::Rect& region,
 	BlurType type,

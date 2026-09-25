@@ -8,6 +8,7 @@
 
 class QLabel;
 class QCheckBox;
+class QComboBox;
 class QSlider;
 class QVBoxLayout;
 
@@ -20,7 +21,9 @@ public:
 	void displayImage(const cv::Mat& image);
 	void showKeyPoints();
 	void showBlurTools();
+	void showThresholdTools();
 	void applyBlur();
+	void applyThreshold();
 
 	bool eventFilter(QObject* watched, QEvent* event) override;
 
@@ -42,10 +45,15 @@ private:
 	QCheckBox* m_keyPointCheckBox = nullptr;
 	QSlider* m_blurSlider = nullptr;
 	QLabel* m_kernelValueLabel = nullptr;
+	ThresholdType m_thresholdType = ThresholdType::Binary;
+	int m_thresholdValue = 0;
+	QSlider* m_thresholdSlider = nullptr;
+	QLabel* m_thresholdValueLabel = nullptr;
 
 	void displayCurrentImage();
 	void displayKeyPoints(const cv::Mat& baseImage);
 	void resetBlurSlider();
 	void resetImage();
+	void resetThresholdImage();
 	QRect mapSourceRectToDisplay(const cv::Rect& sourceRect) const;
 };

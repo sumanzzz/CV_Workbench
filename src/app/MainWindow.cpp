@@ -48,6 +48,7 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 
 	QMenu* toolsMenu = menuBar()->addMenu(AppConfig::MENU_TOOL);
 	QAction* toolAction = toolsMenu->addAction(AppConfig::TOOL_BLUR);
+	QAction* thresholdAction = toolsMenu->addAction(AppConfig::TOOL_THRESHOLD);
 
 	// IMAGE AREA
 	imageDisplay = new QLabel(centralWindow);
@@ -91,6 +92,13 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 		&QAction::triggered,
 		this,
 		&MainWindow::showBlurTools
+	);
+
+	QWidget::connect(
+		thresholdAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::showThresholdTools
 	);
 	
 
@@ -344,6 +352,10 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 // BLUR
 void MainWindow::showBlurTools()
 {
+	if (m_blurSlider)
+	{
+		return;
+	}
 	
 	QLabel* blurTitle = new QLabel(AppConfig::BLUR, toolsPanel);
 	toolsLayout->addWidget(blurTitle);
@@ -436,6 +448,74 @@ void MainWindow::showBlurTools()
 
 }
 
+void MainWindow::showThresholdTools()
+{
+	if (m_thresholdSlider)
+	{
+		return;
+	}
+
+	QLabel* thresholdTitle = new QLabel("Threshold", toolsPanel);
+	toolsLayout->addWidget(thresholdTitle);
+
+	QComboBox* thresholdType = new QComboBox(toolsPanel);
+	thresholdType->addItem("Binary");
+	thresholdType->addItem("Binary Inverse");
+	thresholdType->addItem("Trunc");
+	thresholdType->addItem("To Zero");
+	thresholdType->addItem("To Zero Inverse");
+	toolsLayout->addWidget(thresholdType);
+
+	QSlider* slider = new QSlider(Qt::Horizontal, toolsPanel);
+	slider->setMinimum(0);
+	slider->setMaximum(255);
+	slider->setValue(m_thresholdValue);
+	toolsLayout->addWidget(slider);
+	m_thresholdSlider = slider;
+
+	QLabel* value = new QLabel("Threshold: " + QString::number(m_thresholdValue), toolsPanel);
+	toolsLayout->addWidget(value);
+	m_thresholdValueLabel = value;
+
+	QPushButton* resetButton = new QPushButton("Reset Image", toolsPanel);
+	toolsLayout->addWidget(resetButton);
+	QObject::connect(resetButton, &QPushButton::clicked, this, &MainWindow::resetThresholdImage);
+
+	QObject::connect(
+		thresholdType,
+		qOverload<int>(&QComboBox::currentIndexChanged),
+		this,
+		[this](int index)
+		{
+			switch (index)
+			{
+			case 0: m_thresholdType = ThresholdType::Binary; break;
+			case 1: m_thresholdType = ThresholdType::BinaryInverse; break;
+			case 2: m_thresholdType = ThresholdType::Trunc; break;
+			case 3: m_thresholdType = ThresholdType::ToZero; break;
+			case 4: m_thresholdType = ThresholdType::ToZeroInverse; break;
+			default: return;
+			}
+			const QSignalBlocker sliderBlocker(m_thresholdSlider);
+			m_thresholdSlider->setValue(0);
+			m_thresholdValue = 0;
+			m_thresholdValueLabel->setText("Threshold: 0");
+			applyThreshold();
+		}
+	);
+	QObject::connect(
+		slider,
+		&QSlider::valueChanged,
+		this,
+		[this, value](int thresholdValue)
+		{
+			m_thresholdValue = thresholdValue;
+			value->setText("Threshold: " + QString::number(m_thresholdValue));
+			applyThreshold();
+		}
+	);
+}
+
 void MainWindow::applyBlur()
 {
 	if (!m_image)
@@ -461,6 +541,34 @@ void MainWindow::applyBlur()
 		m_processedImage = m_image->applyBlur(m_blurType, m_blurKernelSize);
 	}
 
+	displayCurrentImage();
+}
+
+void MainWindow::applyThreshold()
+{
+	if (!m_image)
+	{
+		return;
+	}
+
+	Image thresholdInput(m_image->getImage());
+	m_processedImage = thresholdInput.applyThreshold(m_thresholdType, m_thresholdValue);
+	displayCurrentImage();
+}
+
+void MainWindow::resetThresholdImage()
+{
+	m_processedImage.release();
+	m_thresholdValue = 0;
+	if (m_thresholdSlider)
+	{
+		const QSignalBlocker blocker(m_thresholdSlider);
+		m_thresholdSlider->setValue(0);
+	}
+	if (m_thresholdValueLabel)
+	{
+		m_thresholdValueLabel->setText("Threshold: 0");
+	}
 	displayCurrentImage();
 }
 

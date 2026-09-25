@@ -14,6 +14,7 @@ namespace AppConfig
 	
 	constexpr auto MENU_TOOL = "Tools";
 	constexpr auto TOOL_BLUR = "Blur";
+	constexpr auto TOOL_THRESHOLD = "Threshold";
 
 	// TOOLS PANEL
 	constexpr auto TOOLS_PANEL_TITLE = "Tools";

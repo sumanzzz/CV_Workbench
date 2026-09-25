@@ -8,6 +8,16 @@ enum class BlurType
 	Median,
 	Box
 };
+
+enum class ThresholdType
+{
+	Binary,
+	BinaryInverse,
+	Trunc,
+	ToZero,
+	ToZeroInverse
+};
+
 class Image
 {
 public:
@@ -17,6 +27,7 @@ public:
 
 	// BLUR 
 	cv::Mat applyBlur(BlurType type, int kernelSize);
+	cv::Mat applyThreshold(ThresholdType type, double thresholdValue, double maxValue = 255.0);
 	cv::Mat applyBlurToRegion(
 		const cv::Rect& region,
 		BlurType type,
