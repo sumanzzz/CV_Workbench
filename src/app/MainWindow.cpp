@@ -36,6 +36,7 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 	resize(AppConfig::WINDOW_LENGTH, AppConfig::WINDOW_WIDTH);
 
 	QWidget* centralWindow = new QWidget(this);
+	centralWindow->setObjectName("centralWindow");
 	setCentralWidget(centralWindow);
 
 	QGridLayout* layout = new QGridLayout(centralWindow);
@@ -57,16 +58,13 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 	imageDisplay->setFixedSize(AppConfig::IMAGE_MIN_W, AppConfig::IMAGE_MIN_H);
 	imageDisplay->setScaledContents(false);
 	imageDisplay->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	imageDisplay->setStyleSheet(
-		"QLabel{"
-		"border:1px solid #555;"
-		"}"
-	);
+	imageDisplay->setObjectName("imageDisplay");
 	imageDisplay->installEventFilter(this);
 	layout->addWidget(imageDisplay);
 
 	// TOOLS PANEL
 	toolsPanel = new QWidget(centralWindow);
+	toolsPanel->setObjectName("toolsPanel");
 	layout->addWidget(toolsPanel, 0, 2, 3, 1);
 	toolsLayout = new QVBoxLayout(toolsPanel);
 
