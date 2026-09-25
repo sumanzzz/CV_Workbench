@@ -7,6 +7,8 @@
 #include <vector>
 
 class QLabel;
+class QCheckBox;
+class QSlider;
 class QVBoxLayout;
 
 class MainWindow :public QMainWindow
@@ -28,10 +30,22 @@ public:
 
 private:
 	Image* m_image = nullptr;
+	cv::Mat m_processedImage;
 	QRect m_displayRect;
 	std::vector<cv::KeyPoint> m_keyPoints;
 	int m_selectedKeyPointIndex = -1;
+	BlurType m_blurType = BlurType::Gaussian;
+	int m_blurKernelSize = 1;
+	bool m_hasBlurPreview = false;
+	bool m_keyPointsDetected = false;
+	bool m_showKeyPoints = false;
+	QCheckBox* m_keyPointCheckBox = nullptr;
+	QSlider* m_blurSlider = nullptr;
+	QLabel* m_kernelValueLabel = nullptr;
 
-	void displayKeyPoints();
+	void displayCurrentImage();
+	void displayKeyPoints(const cv::Mat& baseImage);
+	void resetBlurSlider();
+	void resetImage();
 	QRect mapSourceRectToDisplay(const cv::Rect& sourceRect) const;
 };

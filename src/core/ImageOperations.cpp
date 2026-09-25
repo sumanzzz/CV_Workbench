@@ -35,6 +35,47 @@ cv::Mat Image::applyBlur(BlurType type, int kernelSize)
 
 	}
 }
+
+cv::Mat Image::applyBlurToRegion(
+	const cv::Rect& region,
+	BlurType type,
+	int kernelSize,
+	const cv::Mat& existingProcessedImage
+)
+{
+	if (m_image.empty())
+	{
+		return {};
+	}
+
+	cv::Mat result = m_image.clone();
+	if (!existingProcessedImage.empty() &&
+		existingProcessedImage.size() == m_image.size() &&
+		existingProcessedImage.type() == m_image.type())
+	{
+		result = existingProcessedImage.clone();
+	}
+	if (kernelSize <= 0)
+	{
+		return result;
+	}
+
+	const cv::Rect imageBounds(0, 0, m_image.cols, m_image.rows);
+	const cv::Rect clippedRegion = region & imageBounds;
+	if (clippedRegion.empty())
+	{
+		return result;
+	}
+
+	const cv::Mat blurredImage = applyBlur(type, kernelSize);
+	if (blurredImage.empty())
+	{
+		return result;
+	}
+
+	blurredImage(clippedRegion).copyTo(result(clippedRegion));
+	return result;
+}
 cv::Mat Image::gaussianBlur(int kernelSize)
 {
 	cv::Mat gauss_blur_image;
@@ -56,21 +97,35 @@ cv::Mat Image::boxBlur(int kernelSize)
 
 std::vector<cv::KeyPoint> Image::detectKeypoints()
 {
+	return detectKeypoints(m_image);
+}
+
+std::vector<cv::KeyPoint> Image::detectKeypoints(const cv::Mat& image) const
+{
 	cv::Ptr<cv::ORB> orb = cv::ORB::create();
 
 	std::vector<cv::KeyPoint> keyPoints;
 
-	orb->detect(m_image, keyPoints);
+	if (!image.empty())
+	{
+		orb->detect(image, keyPoints);
+	}
 
 	return keyPoints;
 }
 
 cv::Mat Image::drawKeyPoints(const std::vector<cv::KeyPoint>& keyPoints)
 {
-	cv::Mat result;
-	
-	cv::drawKeypoints(m_image, keyPoints, result);
+	return drawKeyPoints(m_image, keyPoints);
+}
 
+cv::Mat Image::drawKeyPoints(
+	const cv::Mat& image,
+	const std::vector<cv::KeyPoint>& keyPoints
+) const
+{
+	cv::Mat result;
+	cv::drawKeypoints(image, keyPoints, result);
 	return result;
 }
 

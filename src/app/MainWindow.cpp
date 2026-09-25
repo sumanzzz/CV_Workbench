@@ -20,6 +20,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPen>
+#include <QSignalBlocker>
 
 #include <QSizePolicy>
 #include <QString>
@@ -113,8 +114,17 @@ void MainWindow::openFile()
 			return;
 		}
 		m_image = new Image(loadedImage);
+		m_processedImage.release();
 		m_keyPoints.clear();
 		m_selectedKeyPointIndex = -1;
+		m_hasBlurPreview = false;
+		m_keyPointsDetected = false;
+		m_showKeyPoints = false;
+		if (m_keyPointCheckBox)
+		{
+			const QSignalBlocker blocker(m_keyPointCheckBox);
+			m_keyPointCheckBox->setChecked(false);
+		}
 		displayImage(loadedImage);
 	}
 }
@@ -153,12 +163,59 @@ void MainWindow::showKeyPoints()
 		return;
 	}
 
-	m_keyPoints = m_image->detectKeypoints();
+	const cv::Mat& currentImage = m_processedImage.empty()
+		? m_image->getImage()
+		: m_processedImage;
+	cv::Point2f previousSelection;
+	const bool hadSelection = m_selectedKeyPointIndex >= 0 &&
+		m_selectedKeyPointIndex < static_cast<int>(m_keyPoints.size());
+	if (hadSelection)
+	{
+		previousSelection = m_keyPoints[static_cast<std::size_t>(m_selectedKeyPointIndex)].pt;
+	}
+
+	m_keyPoints = m_image->detectKeypoints(currentImage);
+	m_keyPointsDetected = true;
 	m_selectedKeyPointIndex = -1;
-	displayKeyPoints();
+	if (hadSelection && !m_keyPoints.empty())
+	{
+		double nearestDistanceSquared = std::numeric_limits<double>::max();
+		for (std::size_t index = 0; index < m_keyPoints.size(); ++index)
+		{
+			const cv::Point2f offset = m_keyPoints[index].pt - previousSelection;
+			const double distanceSquared = offset.dot(offset);
+			if (distanceSquared < nearestDistanceSquared)
+			{
+				nearestDistanceSquared = distanceSquared;
+				m_selectedKeyPointIndex = static_cast<int>(index);
+			}
+		}
+	}
+	m_showKeyPoints = true;
+	displayCurrentImage();
 }
 
-void MainWindow::displayKeyPoints()
+void MainWindow::displayCurrentImage()
+{
+	if (!m_image)
+	{
+		return;
+	}
+
+	const cv::Mat& currentImage = m_processedImage.empty()
+		? m_image->getImage()
+		: m_processedImage;
+	if (m_showKeyPoints && m_keyPointsDetected)
+	{
+		displayKeyPoints(currentImage);
+	}
+	else
+	{
+		displayImage(currentImage);
+	}
+}
+
+void MainWindow::displayKeyPoints(const cv::Mat& baseImage)
 {
 	if (!m_image)
 	{
@@ -175,7 +232,7 @@ void MainWindow::displayKeyPoints()
 		}
 	}
 
-	cv::Mat keyPointImage = m_image->drawKeyPoints(otherKeyPoints);
+	cv::Mat keyPointImage = m_image->drawKeyPoints(baseImage, otherKeyPoints);
 	if (m_selectedKeyPointIndex >= 0 &&
 		m_selectedKeyPointIndex < static_cast<int>(m_keyPoints.size()))
 	{
@@ -237,7 +294,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 	{
 		auto* mouseEvent = static_cast<QMouseEvent*>(event);
 		if (mouseEvent->button() == Qt::LeftButton &&
-			m_image && !m_keyPoints.empty())
+			m_image && m_showKeyPoints && !m_keyPoints.empty())
 		{
 			const QPoint displayPoint = mouseEvent->pos();
 			if (m_displayRect.contains(displayPoint))
@@ -251,6 +308,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 					static_cast<float>((displayPoint.y() - m_displayRect.y()) * scaleY)
 				);
 
+				const int previousSelectionIndex = m_selectedKeyPointIndex;
 				double nearestDistanceSquared = std::numeric_limits<double>::max();
 				for (std::size_t index = 0; index < m_keyPoints.size(); ++index)
 				{
@@ -263,7 +321,19 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 					}
 				}
 
-				displayKeyPoints();
+				if (m_selectedKeyPointIndex != previousSelectionIndex)
+				{
+					resetBlurSlider();
+					displayCurrentImage();
+				}
+				else if (m_hasBlurPreview)
+				{
+					applyBlur();
+				}
+				else
+				{
+					displayCurrentImage();
+				}
 			}
 		}
 	}
@@ -287,32 +357,62 @@ void MainWindow::showBlurTools()
 
 	// SLIDER FOR  BLUR
 	QSlider* slider = new QSlider(Qt::Horizontal, toolsPanel);
-	slider->setMinimum(1);
+	slider->setMinimum(0);
 	slider->setMaximum(10);
-	slider->setValue(1);
+	slider->setValue(0);
 	toolsLayout->addWidget(slider);
+	m_blurSlider = slider;
 
-	QLabel* value = new QLabel("Kernel : 1", toolsPanel);
+	QLabel* value = new QLabel("Kernel: 1", toolsPanel);
 	toolsLayout->addWidget(value);
+	m_kernelValueLabel = value;
 
 	QCheckBox* keyPointCheck = new QCheckBox("Show Keypoints", toolsPanel);
 	toolsLayout->addWidget(keyPointCheck);
+	m_keyPointCheckBox = keyPointCheck;
+
+	QPushButton* resetButton = new QPushButton("Reset Image", toolsPanel);
+	toolsLayout->addWidget(resetButton);
+	QObject::connect(resetButton, &QPushButton::clicked, this, &MainWindow::resetImage);
 
 	QObject::connect(
 		slider,
 		&QSlider::valueChanged,
 		this,
-		[this, value  ,blurType](int val)
+		[this, value, blurType](int val)
 		{
-			int kernelSize = (2 * val + 1);
-			value->setText("Kernel: " + QString::number(kernelSize));
-
-			cv::Mat blurred;
-			blurred = m_image->applyBlur(static_cast<BlurType>(blurType->currentIndex()) , kernelSize);
-
-			qDebug() << blurType<< " Blur :" << kernelSize;
-
-			displayImage(blurred);
+			m_blurKernelSize = (2 * val + 1);
+			m_blurType = static_cast<BlurType>(blurType->currentIndex());
+			m_hasBlurPreview = true;
+			value->setText("Kernel: " + QString::number(m_blurKernelSize));
+			qDebug() << blurType << " Blur :" << m_blurKernelSize;
+			applyBlur();
+		}
+	);
+	QObject::connect(
+		blurType,
+		qOverload<int>(&QComboBox::currentIndexChanged),
+		this,
+		[this, slider, value](int index)
+		{
+			m_blurType = static_cast<BlurType>(index);
+			const QSignalBlocker sliderBlocker(slider);
+			slider->setValue(0);
+			m_blurKernelSize = 1;
+			value->setText("Kernel: 1");
+			m_processedImage.release();
+			m_selectedKeyPointIndex = -1;
+			m_hasBlurPreview = false;
+			m_keyPoints.clear();
+			m_keyPointsDetected = false;
+			if (m_showKeyPoints)
+			{
+				showKeyPoints();
+			}
+			else
+			{
+				displayCurrentImage();
+			}
 		}
 	);
 	QObject::connect(
@@ -327,16 +427,72 @@ void MainWindow::showBlurTools()
 			}
 			else
 			{
-				m_keyPoints.clear();
-				m_selectedKeyPointIndex = -1;
-				if (m_image)
-				{
-					displayImage(m_image->getImage());
-				}
-
+				m_showKeyPoints = false;
+				displayCurrentImage();
 			}
 			
 		}
 	);
 
+}
+
+void MainWindow::applyBlur()
+{
+	if (!m_image)
+	{
+		return;
+	}
+
+	if (m_selectedKeyPointIndex >= 0 &&
+		m_selectedKeyPointIndex < static_cast<int>(m_keyPoints.size()))
+	{
+		const cv::Rect selectedRegion = m_image->keyPointRegion(
+			m_keyPoints[static_cast<std::size_t>(m_selectedKeyPointIndex)]
+		);
+		m_processedImage = m_image->applyBlurToRegion(
+			selectedRegion,
+			m_blurType,
+			m_blurKernelSize,
+			m_processedImage
+		);
+	}
+	else
+	{
+		m_processedImage = m_image->applyBlur(m_blurType, m_blurKernelSize);
+	}
+
+	displayCurrentImage();
+}
+
+void MainWindow::resetImage()
+{
+	m_processedImage.release();
+	m_keyPoints.clear();
+	m_selectedKeyPointIndex = -1;
+	m_keyPointsDetected = false;
+	m_showKeyPoints = false;
+	resetBlurSlider();
+
+	if (m_keyPointCheckBox)
+	{
+		const QSignalBlocker blocker(m_keyPointCheckBox);
+		m_keyPointCheckBox->setChecked(false);
+	}
+
+	displayCurrentImage();
+}
+
+void MainWindow::resetBlurSlider()
+{
+	m_blurKernelSize = 1;
+	m_hasBlurPreview = false;
+	if (m_blurSlider)
+	{
+		const QSignalBlocker blocker(m_blurSlider);
+		m_blurSlider->setValue(0);
+	}
+	if (m_kernelValueLabel)
+	{
+		m_kernelValueLabel->setText("Kernel: 1");
+	}
 }
