@@ -33,8 +33,8 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 
 	QGridLayout* layout = new QGridLayout(centralWindow);
 
-	
-	
+
+
 	// MENU BAR
 	QMenu* fileMenu = menuBar()->addMenu(AppConfig::MENU_FILE);
 	QAction* fileAction = fileMenu->addAction(AppConfig::FILE_OPEN);
@@ -46,8 +46,14 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 	imageDisplay = new QLabel(centralWindow);
 	imageDisplay->setAlignment(Qt::AlignCenter);
 	imageDisplay->setText(ALERT::NO_IMAGE);
+	imageDisplay->setFixedSize(AppConfig::IMAGE_MIN_W, AppConfig::IMAGE_MIN_H);
 	imageDisplay->setScaledContents(false);
-
+	imageDisplay->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	imageDisplay->setStyleSheet(
+		"QLabel{"
+		"border:1px solid #555;"
+		"}"
+	);
 	layout->addWidget(imageDisplay);
 
 	// TOOLS PANEL
@@ -60,7 +66,6 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 	toolsLayout->setAlignment(Qt::AlignTop);
 	toolsLayout->setAlignment(toolsTitle, Qt::AlignHCenter);
 
-	//BLUR
 	
 	
 
@@ -135,6 +140,7 @@ void MainWindow::showKeyPoints()
 	displayImage(keyPointImage);
 }
 
+// BLUR
 void MainWindow::showBlurTools()
 {
 	

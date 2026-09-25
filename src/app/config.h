@@ -5,6 +5,9 @@ namespace AppConfig
 	constexpr int WINDOW_WIDTH = 600;
 	constexpr auto WINDOW_TITLE = "Computer Vision Workbench";
 
+	// IMAGE RELATED CONFIG
+	constexpr int IMAGE_MIN_H = 400;
+	constexpr int IMAGE_MIN_W = 300;
 	// MENU RELATED CONFIG
 	constexpr auto MENU_FILE = "File";
 	constexpr auto FILE_OPEN = "Open";
