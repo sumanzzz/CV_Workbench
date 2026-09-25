@@ -4,6 +4,8 @@
 #include <QRect>
 #include <ImageOperations.h>
 
+#include <vector>
+
 class QLabel;
 class QVBoxLayout;
 
@@ -18,11 +20,17 @@ public:
 	void showBlurTools();
 	void applyBlur();
 
+	bool eventFilter(QObject* watched, QEvent* event) override;
+
 	QLabel* imageDisplay;
 	QWidget* toolsPanel;
 	QVBoxLayout* toolsLayout;
 
 private:
-	Image* m_image;
+	Image* m_image = nullptr;
 	QRect m_displayRect;
+	std::vector<cv::KeyPoint> m_keyPoints;
+	int m_selectedKeyPointIndex = -1;
+
+	void displayKeyPoints();
 };

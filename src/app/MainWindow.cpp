@@ -17,11 +17,14 @@
 #include <QImage>
 #include <QPixmap>
 #include <QCheckBox>
+#include <QMouseEvent>
 
 #include <QSizePolicy>
 #include <QString>
 #include <QDebug>
 #include <QFileDialog>
+
+#include <limits>
 
 MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 {
@@ -54,6 +57,7 @@ MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 		"border:1px solid #555;"
 		"}"
 	);
+	imageDisplay->installEventFilter(this);
 	layout->addWidget(imageDisplay);
 
 	// TOOLS PANEL
@@ -106,6 +110,8 @@ void MainWindow::openFile()
 			return;
 		}
 		m_image = new Image(loadedImage);
+		m_keyPoints.clear();
+		m_selectedKeyPointIndex = -1;
 		displayImage(loadedImage);
 	}
 }
@@ -139,11 +145,92 @@ void MainWindow::displayImage(const cv::Mat& image)
 // KEY POINTS
 void MainWindow::showKeyPoints()
 {
-	std::vector<cv::KeyPoint> keyPoints = m_image->detectKeypoints();
+	if (!m_image)
+	{
+		return;
+	}
 
-	cv::Mat keyPointImage = m_image->drawKeyPoints(keyPoints);
+	m_keyPoints = m_image->detectKeypoints();
+	m_selectedKeyPointIndex = -1;
+	displayKeyPoints();
+}
+
+void MainWindow::displayKeyPoints()
+{
+	if (!m_image)
+	{
+		return;
+	}
+
+	std::vector<cv::KeyPoint> otherKeyPoints;
+	otherKeyPoints.reserve(m_keyPoints.size());
+	for (std::size_t index = 0; index < m_keyPoints.size(); ++index)
+	{
+		if (static_cast<int>(index) != m_selectedKeyPointIndex)
+		{
+			otherKeyPoints.push_back(m_keyPoints[index]);
+		}
+	}
+
+	cv::Mat keyPointImage = m_image->drawKeyPoints(otherKeyPoints);
+	if (m_selectedKeyPointIndex >= 0 &&
+		m_selectedKeyPointIndex < static_cast<int>(m_keyPoints.size()))
+	{
+		std::vector<cv::KeyPoint> selectedKeyPoint{
+			m_keyPoints[static_cast<std::size_t>(m_selectedKeyPointIndex)]
+		};
+		cv::Mat selectedKeyPointImage;
+		cv::drawKeypoints(
+			keyPointImage,
+			selectedKeyPoint,
+			selectedKeyPointImage,
+			cv::Scalar(0, 0, 255),
+			cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS
+		);
+		keyPointImage = selectedKeyPointImage;
+	}
 
 	displayImage(keyPointImage);
+}
+
+bool MainWindow::eventFilter(QObject* watched, QEvent* event)
+{
+	if (watched == imageDisplay && event->type() == QEvent::MouseButtonPress)
+	{
+		auto* mouseEvent = static_cast<QMouseEvent*>(event);
+		if (mouseEvent->button() == Qt::LeftButton &&
+			m_image && !m_keyPoints.empty())
+		{
+			const QPoint displayPoint = mouseEvent->pos();
+			if (m_displayRect.contains(displayPoint))
+			{
+				const double scaleX = static_cast<double>(m_image->getImage().cols) /
+					m_displayRect.width();
+				const double scaleY = static_cast<double>(m_image->getImage().rows) /
+					m_displayRect.height();
+				const cv::Point2f sourcePoint(
+					static_cast<float>((displayPoint.x() - m_displayRect.x()) * scaleX),
+					static_cast<float>((displayPoint.y() - m_displayRect.y()) * scaleY)
+				);
+
+				double nearestDistanceSquared = std::numeric_limits<double>::max();
+				for (std::size_t index = 0; index < m_keyPoints.size(); ++index)
+				{
+					const cv::Point2f offset = m_keyPoints[index].pt - sourcePoint;
+					const double distanceSquared = offset.dot(offset);
+					if (distanceSquared < nearestDistanceSquared)
+					{
+						nearestDistanceSquared = distanceSquared;
+						m_selectedKeyPointIndex = static_cast<int>(index);
+					}
+				}
+
+				displayKeyPoints();
+			}
+		}
+	}
+
+	return QMainWindow::eventFilter(watched, event);
 }
 
 // BLUR
@@ -202,8 +289,12 @@ void MainWindow::showBlurTools()
 			}
 			else
 			{
-				const cv::Mat& original = m_image->getImage();
-				displayImage(original);
+				m_keyPoints.clear();
+				m_selectedKeyPointIndex = -1;
+				if (m_image)
+				{
+					displayImage(m_image->getImage());
+				}
 
 			}
 			
