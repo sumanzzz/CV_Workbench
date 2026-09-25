@@ -24,6 +24,7 @@ public:
 
 	std::vector<cv::KeyPoint> detectKeypoints();
 	cv::Mat drawKeyPoints(const std::vector<cv::KeyPoint>& keyPoints);
+	cv::Rect keyPointRegion(const cv::KeyPoint& keyPoint) const;
 
 private:
 	cv::Mat m_image;

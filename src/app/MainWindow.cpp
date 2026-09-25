@@ -18,6 +18,8 @@
 #include <QPixmap>
 #include <QCheckBox>
 #include <QMouseEvent>
+#include <QPainter>
+#include <QPen>
 
 #include <QSizePolicy>
 #include <QString>
@@ -25,6 +27,7 @@
 #include <QFileDialog>
 
 #include <limits>
+#include <cmath>
 
 MainWindow::MainWindow(QWidget* parent) :QMainWindow(parent)
 {
@@ -191,6 +194,41 @@ void MainWindow::displayKeyPoints()
 	}
 
 	displayImage(keyPointImage);
+	if (m_selectedKeyPointIndex >= 0 &&
+		m_selectedKeyPointIndex < static_cast<int>(m_keyPoints.size()))
+	{
+		const cv::Rect sourceRegion = m_image->keyPointRegion(
+			m_keyPoints[static_cast<std::size_t>(m_selectedKeyPointIndex)]
+		);
+		if (!sourceRegion.empty())
+		{
+			const QRect displayRegion = mapSourceRectToDisplay(sourceRegion);
+			QPixmap displayPixmap = imageDisplay->pixmap(Qt::ReturnByValue);
+			QPainter painter(&displayPixmap);
+			painter.setPen(QPen(Qt::yellow, 2));
+			painter.drawRect(displayRegion.translated(-m_displayRect.topLeft()));
+			painter.end();
+			imageDisplay->setPixmap(displayPixmap);
+		}
+	}
+}
+
+QRect MainWindow::mapSourceRectToDisplay(const cv::Rect& sourceRect) const
+{
+	if (!m_image || sourceRect.empty())
+	{
+		return {};
+	}
+
+	const cv::Mat& sourceImage = m_image->getImage();
+	const double scaleX = static_cast<double>(m_displayRect.width()) / sourceImage.cols;
+	const double scaleY = static_cast<double>(m_displayRect.height()) / sourceImage.rows;
+	const int left = m_displayRect.x() + static_cast<int>(std::lround(sourceRect.x * scaleX));
+	const int top = m_displayRect.y() + static_cast<int>(std::lround(sourceRect.y * scaleY));
+	const int right = m_displayRect.x() + static_cast<int>(std::lround((sourceRect.x + sourceRect.width) * scaleX));
+	const int bottom = m_displayRect.y() + static_cast<int>(std::lround((sourceRect.y + sourceRect.height) * scaleY));
+
+	return QRect(left, top, right - left, bottom - top);
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)

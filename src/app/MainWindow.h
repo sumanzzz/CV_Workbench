@@ -33,4 +33,5 @@ private:
 	int m_selectedKeyPointIndex = -1;
 
 	void displayKeyPoints();
+	QRect mapSourceRectToDisplay(const cv::Rect& sourceRect) const;
 };
