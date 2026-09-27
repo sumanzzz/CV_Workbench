@@ -32,7 +32,8 @@ cv::Mat Image::applyBlur(BlurType type, int kernelSize)
 	{
 		return boxBlur(kernelSize);
 	}
-
+	default:
+		return {};
 	}
 }
 
